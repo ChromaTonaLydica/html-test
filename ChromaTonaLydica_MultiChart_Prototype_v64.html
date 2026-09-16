@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChromaTonaLydica — Multi Chart</title>
+<style>
+:root{--bg:#666;--panel:#7d7d7d;--line:#f5f5f5;--text:#222;--muted:#666;--darkline:#d0d0d0;--midline:#e2e2e2}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:var(--bg)}
+body{display:flex;flex-direction:column;overflow:hidden}
+.toolbar{flex:0 0 78px;background:var(--panel);color:#fff;padding:8px 14px;display:flex;align-items:center;gap:12px}
+.title{font-size:24px;letter-spacing:2.5px;font-weight:600;white-space:nowrap}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.group{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.09);padding:4px 7px;border-radius:6px}
+.group small{font-size:10px;letter-spacing:.6px;text-transform:uppercase;opacity:.8}
+.select{height:30px;border:1px solid #a8a8a8;border-radius:4px;background:#f6f6f6;color:#222;padding:0 8px;font:inherit}
+.target-box{display:flex;align-items:center;gap:6px;background:linear-gradient(#edf7e8,#cce4c2);color:#263d21;border-radius:6px;padding:4px 8px}
+.target-box strong{font-size:10px;letter-spacing:.6px}
+.degrees{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.degrees label{font-size:10px;display:flex;align-items:center;gap:2px}
+.degrees input{width:12px;height:12px;margin:0}
+.target-value{font-family:"Cascadia Mono","Cascadia Code",Cascadia,monospace;font-size:11px;background:#fff;color:#222;border-radius:5px;padding:5px 8px;min-width:150px;white-space:nowrap}
+.modebtn{min-width:62px;height:30px;border:1px solid #a8a8a8;border-radius:4px;background:#f6f6f6;color:#222;padding:0 10px;font:inherit;cursor:pointer}.modebtn.active{background:#666;color:#fff;border-color:#666}
+.main{flex:1;min-height:0;overflow:hidden;padding:8px 10px;display:flex;flex-direction:column}
+.canvas{min-width:1200px;display:flex;flex-direction:column;min-height:0;height:100%}
+.upper-frame{background:#f5f5f5;border:1px solid #999;overflow:hidden;flex:0 0 auto;min-height:0}
+.head{display:grid;grid-template-columns:82px repeat(12,minmax(0,1fr));grid-template-rows:30px 30px 30px;flex:0 0 auto}
+.head>div{box-sizing:border-box}
+/* Header border system matched to the Single Chart treatment. */
+.head>div.h{border-right:1px solid #F5F5F5;border-bottom:1px solid #F5F5F5}
+.head>div.h.i-col,.head>div.h.vi-col{border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0}
+.head>div.h.bII-col,.head>div.h.bIII-col,.head>div.h.iv-col,.head>div.h.pv-col,.head>div.h.bVII-col{border-right:1px solid #F5F5F5}
+.head>div.modal{border-top:0;border-bottom:4px solid #b8b8b8}
+.head>div.modal.i-modal,.head>div.modal.vi-modal{border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0}
+.head>div.modal.bII-modal,.head>div.modal.bIII-modal,.head>div.modal.iv-modal,.head>div.modal.pv-modal,.head>div.modal.bVII-modal{border-right:1px solid #F5F5F5}
+.keyhost{grid-column:1;grid-row:1/4;background:#666;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;border:0!important}
+.keyhost small{font-size:11px;color:#e7e7e7;text-transform:uppercase;letter-spacing:.4px}
+.keyhost select{width:88%;height:46px;font-size:16px;background:#f6f6f6;color:#222;border:1px solid #999;border-radius:4px;text-align:center}
+.h{background:#fff;padding:3px 5px;overflow:hidden;display:flex;align-items:center}
+.roman{font-size:17px;font-weight:700;width:100%}
+.note{font-size:16px;color:#355f2d;font-weight:700;width:100%}
+.center{text-align:center;justify-content:center}
+.right{text-align:right;justify-content:flex-end}
+.left{text-align:left;justify-content:flex-start}
+.modal{grid-row:3;display:flex;align-items:center;justify-content:center;background:#fff;font-size:10px;font-weight:700;color:#444;letter-spacing:.3px;white-space:pre;text-transform:uppercase;padding:0 2px}
+/* Single Chart header color treatment: secondary/muted degree columns use lighter grey text. */
+.headgrid .h.bII-col > .roman, .headgrid .h.bIII-col > .roman, .headgrid .h.iv-col > .roman, .headgrid .h.v-col > .roman, .headgrid .h.pv-col > .roman, .headgrid .h.bVII-col > .roman { color:#b5b5b5; }
+.headgrid .h.bII-col > .note, .headgrid .h.bIII-col > .note, .headgrid .h.iv-col > .note, .headgrid .h.v-col > .note, .headgrid .h.pv-col > .note, .headgrid .h.bVII-col > .note { color:#b5b5b5; }
+.headgrid .modal.bII-modal, .headgrid .modal.bIII-modal, .headgrid .modal.iv-modal, .headgrid .modal.pv-modal, .headgrid .modal.bVII-modal { color:#b5b5b5; }
+
+.upper-grid{display:grid;grid-template-columns:minmax(58px,13.332fr) repeat(12,minmax(72px,24.441fr));grid-auto-rows:minmax(24px,auto)}
+.label{background:#ededed;color:#606060;font-size:9px;line-height:1.08;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 3px;border-bottom:1px solid #f5f5f5}
+.cell{background:#fff;min-height:28px;padding:2px 5px;font-size:9px;line-height:1.15;display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid #f5f5f5}
+.cell.center{justify-content:center;text-align:center}
+.cell.right{justify-content:flex-end;text-align:right}
+.cell.left{justify-content:flex-start;text-align:left}
+.cell.i,.cell.vi{border-left:2px solid var(--darkline);border-right:2px solid var(--darkline)}
+.family-7b .cell,.family-7b .label{border-bottom:4px solid #b8b8b8!important}
+.section-title{background:#FFF2CC;color:#444;padding:7px 10px;font-size:18px;letter-spacing:.4px;text-align:center}
+.section-notes{background:#FFF2CC;color:#444;padding:5px 10px;text-align:center;font-family:"Cascadia Mono","Cascadia Code",monospace;font-size:12px;border-bottom:1px solid #ddd}
+.lower-scroll{flex:1 1 auto;min-height:0;overflow:auto;overflow-x:hidden;margin-top:8px;padding-right:2px;scrollbar-width:none;-ms-overflow-style:none}.lower-scroll::-webkit-scrollbar{display:none}.key-block{margin-top:5px;background:#fff;border:1px solid #ddd;overflow:hidden}
+.key-block:first-child{margin-top:5px}
+.block-grid{display:grid;grid-template-columns:minmax(58px,13.332fr) repeat(12,minmax(72px,24.441fr))}
+.modal-row-note{font-size:10px;color:#777;text-align:center;padding:3px 0;background:#fafafa}
+.meta{padding:6px 8px;background:#fafafa;color:#777;font-size:9px}
+.footer{flex:0 0 22px;color:#ddd;font-size:10px;padding:0 14px;display:flex;align-items:center}
+.highlight-block{box-shadow:0 0 0 2px rgba(80,110,70,.4) inset}
+.compare-note{font-size:9px;color:#777;margin-left:6px}
+@media(max-width:1250px){.title{font-size:20px}.toolbar{gap:8px}.target-value{min-width:120px}}
+
+/* Upper header palette: exact Single Chart colors. */
+.head > .h { background:#fff !important; color:#222 !important; }
+.head > .h .roman { color:#222 !important; }
+.head > .h .note { color:#355f2d !important; }
+.head > .modal { background:#fff !important; color:#444 !important; }
+.head > .keyhost { background:#666 !important; color:#fff !important; }
+.head > .keyhost small { color:#e5e5e5 !important; }
+.head > .keyhost select { background:#f6f6f6 !important; color:#222 !important; }
+
+/* Header border treatment: preserve the Single Chart hierarchy on all three rows. */
+.head > div.h.i-col, .head > div.h.vi-col { border-left:2px solid #d0d0d0; border-right:2px solid #d0d0d0; }
+.head > div.h.bII-col, .head > div.h.bIII-col, .head > div.h.iv-col, .head > div.h.pv-col, .head > div.h.bVII-col { border-right:1px solid #f5f5f5; }
+.head > div.modal.i-modal, .head > div.modal.vi-modal { border-left:2px solid #d0d0d0; border-right:2px solid #d0d0d0; }
+.head > div.modal.bII-modal, .head > div.modal.bIII-modal, .head > div.modal.iv-modal, .head > div.modal.pv-modal, .head > div.modal.bVII-modal { border-right:1px solid #f5f5f5; }
+
+/* Compact calculation rows — headers remain unchanged. */
+.upper-grid,
+.block-grid {
+  grid-auto-rows: 22px;
+}
+.upper-grid > .label,
+.upper-grid > .cell,
+.block-grid > .label,
+.block-grid > .cell {
+  min-height: 0;
+}
+
+.lower-scroll .block-grid > .label { color:#A6A6A6 !important; }
+</style>
+<style id="single-header-colors">
+/* Upper header colors matched to the current Single Chart prototype. */
+.head > .h { background:#fff !important; color:#222; }
+.head > .h .roman { color:#222; }
+.head > .h .note { color:#355f2d; }
+.head > .modal { background:#fff !important; color:#444; }
+.head > .keyhost { background:#666 !important; color:#fff; }
+.head > .keyhost small { color:#e7e7e7; }
+.head > .keyhost select { background:#f6f6f6; color:#222; }
+
+/* Header border treatment: preserve the Single Chart hierarchy on all three rows. */
+.head > div.h.i-col, .head > div.h.vi-col { border-left:2px solid #d0d0d0; border-right:2px solid #d0d0d0; }
+.head > div.h.bII-col, .head > div.h.bIII-col, .head > div.h.iv-col, .head > div.h.pv-col, .head > div.h.bVII-col { border-right:1px solid #f5f5f5; }
+.head > div.modal.i-modal, .head > div.modal.vi-modal { border-left:2px solid #d0d0d0; border-right:2px solid #d0d0d0; }
+.head > div.modal.bII-modal, .head > div.modal.bIII-modal, .head > div.modal.iv-modal, .head > div.modal.pv-modal, .head > div.modal.bVII-modal { border-right:1px solid #f5f5f5; }
+</style>
+
+<style id="single-chart-upper-format">
+/* Upper section formatting copied from the current Single Chart visual treatment. */
+.upper-frame{background:#f5f5f5;border:1px solid #999;overflow:hidden;height:auto}
+.head{display:grid;grid-template-columns:82px repeat(12,minmax(0,1fr));grid-template-rows:30px 30px 30px}
+.head > div.h{box-sizing:border-box;background:#fff;color:#222;border-right:1px solid #F5F5F5;border-bottom:1px solid #F5F5F5}
+.head > div.h .roman{color:#222}
+.head > div.h .note{color:#355f2d}
+/* Single Chart muted header text: bII, bIII, IV, V, +V, bVII. */
+.head > div.h.bII-col .roman,
+.head > div.h.bII-col .note,
+.head > div.h.bIII-col .roman,
+.head > div.h.bIII-col .note,
+.head > div.h.iv-col .roman,
+.head > div.h.iv-col .note,
+.head > div.h.v-col .roman,
+.head > div.h.v-col .note,
+.head > div.h.pv-col .roman,
+.head > div.h.pv-col .note,
+.head > div.h.bVII-col .roman,
+.head > div.h.bVII-col .note{color:#8a8a8a}
+/* Column border hierarchy from Single Chart. */
+.head > div.h.i-col,
+.head > div.h.vi-col{border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0}
+.head > div.h.bII-col,
+.head > div.h.bIII-col,
+.head > div.h.iv-col,
+.head > div.h.v-col,
+.head > div.h.pv-col,
+.head > div.h.bVII-col{border-right:1px solid #F5F5F5}
+/* Modal-name row: white fill, grey text, light separators, and the strong bottom divider. */
+.head > div.modal{background:#fff;color:#444;border-top:0;border-bottom:4px solid #b8b8b8}
+.head > div.modal.i-modal,
+.head > div.modal.vi-modal{border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0}
+.head > div.modal.bII-modal,
+.head > div.modal.bIII-modal,
+.head > div.modal.iv-modal,
+.head > div.modal.v-modal,
+.head > div.modal.pv-modal,
+.head > div.modal.bVII-modal{border-right:1px solid #F5F5F5}
+.head > div.modal.bII-modal,
+.head > div.modal.bIII-modal,
+.head > div.modal.iv-modal,
+.head > div.modal.v-modal,
+.head > div.modal.pv-modal,
+.head > div.modal.bVII-modal{color:#b5b5b5}
+/* Key host uses the same dark-grey host and light selector as Single Chart. */
+.head > div.keyhost{background:#666;color:#fff;border:0!important;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px}
+.head > div.keyhost small{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#e5e5e5;line-height:1}
+.head > div.keyhost select{width:88%;height:48px;min-height:48px;padding:0 5px;border:1px solid #a5a5a5;border-radius:4px;background:#f6f6f6;color:#222;font-size:16px}
+.head > div.keyhost select option{font-size:16px}
+/* Upper calculation cells follow the Single Chart white/light-grey treatment. */
+.upper-grid > .label{background:#ededed;color:#606060;font-weight:400;border-bottom:1px solid #F5F5F5}
+.upper-grid > .cell{background:#fff;border-bottom:1px solid #F5F5F5}
+.upper-grid > .cell.i,
+.upper-grid > .cell.vi{border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0}
+.upper-grid > .cell:nth-child(13n+4),
+.upper-grid > .cell:nth-child(13n+6),
+.upper-grid > .cell:nth-child(13n+8),
+.upper-grid > .cell:nth-child(13n+10),
+.upper-grid > .cell:nth-child(13n+13){border-right:1px solid #F5F5F5}
+.upper-grid .family-7b,
+.upper-grid .family-7b-cell{border-bottom:4px solid #b8b8b8!important}
+
+/* Upper calculation vertical separators mirror the Upper header. */
+.upper-grid{grid-template-columns:minmax(58px,13.332fr) repeat(12,minmax(72px,24.441fr));}
+.upper-grid > .cell:nth-child(13n+2),
+.upper-grid > .cell:nth-child(13n+11){border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0;}
+.upper-grid > .cell:nth-child(13n+3),
+.upper-grid > .cell:nth-child(13n+5),
+.upper-grid > .cell:nth-child(13n+7),
+.upper-grid > .cell:nth-child(13n+9),
+.upper-grid > .cell:nth-child(13n+10),
+.upper-grid > .cell:nth-child(13n+12){border-right:1px solid #F5F5F5;}
+
+/* SINGLE CHART upper-header template: intentionally copied as the source of truth. */
+.headgrid{display:grid;}
+.head{display:grid;grid-template-columns:minmax(58px,13.332fr) repeat(12,minmax(72px,24.441fr));grid-template-rows:25px 25px 25px;flex:0 0 75px;position:relative;}
+.head > div{box-sizing:border-box;}
+.head > div.hcol{border-right:1px solid #e2e2e2;border-bottom:1px solid #e2e2e2;background:#fff;padding:4px 2px;overflow:hidden;display:flex;align-items:center;}
+.head > div.hcol.i-col,.head > div.hcol.vi-col{border-left:2px solid #d0d0d0;border-right:2px solid #d0d0d0;}
+.head > div.hcol.bII-col,.head > div.hcol.bIII-col,.head > div.hcol.iv-col,.head > div.hcol.v-col,.head > div.hcol.pv-col,.head > div.hcol.bVII-col{border-right:1px solid #F5F5F5;}
+.head .hcol .roman{font-size:17px;font-weight:700;width:100%;}
+.head .hcol .note{font-size:16px;color:#355f2d;font-weight:700;width:100%;}
+.head .hcol.align-right{justify-content:flex-end;text-align:right}.head .hcol.align-center{justify-content:center;text-align:center}.head .hcol.align-left{justify-content:flex-start;text-align:left}
+.head .hcol.muted-header .roman,.head .hcol.muted-header .note{color:#b5b5b5}
+.head .merged-modal,.head .modal-half{grid-row:3;background:#fff;color:#444;font-size:10px;font-weight:700;letter-spacing:.35px;text-transform:uppercase;white-space:pre;overflow:hidden;min-width:0;box-sizing:border-box;display:flex;align-items:center;height:100%;padding:0 1px;line-height:1;}
+.head .merged-modal{justify-content:center;text-align:center;width:100%;}
+.head .modal-half-first{justify-content:flex-end;text-align:right;padding-right:2px}.head .modal-half-second{justify-content:flex-start;text-align:left;padding-left:2px}
+.head .merged-modal,.head .modal-half{border-bottom:4px solid #b8b8b8 !important;}
+.head .hcol[style*="grid-column: 2"],.head .merged-modal.i-modal{border-left:2px solid #d0d0d0}.head .hcol[style*="grid-column: 11"],.head .merged-modal.vi-modal{border-left:2px solid #d0d0d0}
+.head .merged-modal.i-modal,.head .merged-modal.vi-modal{border-right:2px solid #d0d0d0}
+.head .merged-modal.bII-modal,.head .merged-modal.bIII-modal,.head .merged-modal.iv-modal,.head .merged-modal.v-modal,.head .merged-modal.pv-modal,.head .merged-modal.bVII-modal{border-right:1px solid #F5F5F5}
+.head .keyhost{grid-column:1;grid-row:1/4;background:#666;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;border:0!important;z-index:25}
+.head .keyhost small{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#e5e5e5;line-height:1}
+.head .keyhost select{width:88%;height:48px;min-height:48px;padding:0 5px;border:1px solid #a5a5a5;border-radius:4px;background:#f6f6f6;color:#222;font-size:16px;text-align:center}
+.head .keyhost select option{font-size:16px}
+.header-deleted-cell{background:#666 !important;border:0 !important;outline:0 !important;box-shadow:none !important;pointer-events:none;}
+
+/* Third-row modal-name cells: darker 1px right separators at the II, III and +IV edges. */
+.head .modal-half.ii-iii-aIV-modal-divider {
+  border-right: 1px solid #D9D9D9 !important;
+}
+</style>
+
+
+<style id="upper-header-horizontal-clearance">
+/* Remove only the two internal horizontal separators between the three Upper header rows. */
+.upper-frame .head > div.hcol,
+.upper-frame .head > div.h {
+  border-bottom: 0 !important;
+}
+</style>
+<style id="single-chart-border-treatment">
+/*
+   Border treatment copied from the current Single Chart.
+   Applied consistently to both the Multi Chart Upper grid and Lower blocks.
+   Horizontal separators inside the three-row Upper header remain removed;
+   only the bottom of the modal-name row is retained as the strong separator.
+*/
+
+/* Start clean: no inherited/mismatched cell borders. */
+.upper-grid > .label,
+.upper-grid > .cell,
+.block-grid > .label,
+.block-grid > .cell {
+  border: 0 !important;
+  box-shadow: none;
+}
+
+/* Single Chart body: every calculation row gets a 1 px very-light bottom border. */
+.upper-grid > .label,
+.upper-grid > .cell,
+.block-grid > .label,
+.block-grid > .cell {
+  border-bottom: 1px solid #F5F5F5 !important;
+}
+
+/* Single Chart's special 7b separator. */
+.upper-grid .family-7b,
+.upper-grid .family-7b-cell,
+.block-grid .family-7b,
+.block-grid .family-7b-cell {
+  border-bottom: 2px solid #B8B8B8 !important;
+}
+
+/* 7b separator: entire row, including every calculated cell. */
+.upper-grid .family-7b-cell { border-bottom: 1px solid #B8B8B8 !important; }
+.block-grid .family-7b-cell { border-bottom: 1px solid #B8B8B8 !important; }
+
+/* Strong separators: Roman I and VI. */
+.upper-grid > .cell:nth-child(13n+2),
+.block-grid > .cell:nth-child(13n+2),
+.upper-grid > .cell:nth-child(13n+11),
+.block-grid > .cell:nth-child(13n+11) {
+  border-left: 2px solid #D0D0D0 !important;
+  border-right: 2px solid #D0D0D0 !important;
+}
+
+/* The corresponding row-label boundary is untouched; only the column itself is separated. */
+
+/* Very light separators: bII, bIII, IV, +V, bVII. */
+.upper-grid > .cell:nth-child(13n+3),
+.upper-grid > .cell:nth-child(13n+5),
+.upper-grid > .cell:nth-child(13n+7),
+.upper-grid > .cell:nth-child(13n+10),
+.upper-grid > .cell:nth-child(13n+12),
+.block-grid > .cell:nth-child(13n+3),
+.block-grid > .cell:nth-child(13n+5),
+.block-grid > .cell:nth-child(13n+7),
+.block-grid > .cell:nth-child(13n+10),
+.block-grid > .cell:nth-child(13n+12) {
+  border-right: 1px solid #F5F5F5 !important;
+}
+
+/* Upper header: begin from no cell borders, then reproduce Single Chart's vertical hierarchy. */
+.upper-frame .head > div.hcol,
+.upper-frame .head > div.modal,
+.upper-frame .head > div.modal-half {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* I and VI in all three header rows. */
+.upper-frame .head > div.hcol.i-col,
+.upper-frame .head > div.hcol.vi-col,
+.upper-frame .head > div.merged-modal.i-modal,
+.upper-frame .head > div.merged-modal.vi-modal,
+.upper-frame .head > div.modal-half.i-modal,
+.upper-frame .head > div.modal-half.vi-modal {
+  border-left: 2px solid #D0D0D0 !important;
+  border-right: 2px solid #D0D0D0 !important;
+}
+
+/* II, III and +IV: explicit right separators in all three header rows. */
+.upper-frame .head > div.hcol.ii-col,
+.upper-frame .head > div.hcol.iii-col,
+.upper-frame .head > div.hcol.aIV-col {
+  border-right: 1px solid #D9D9D9 !important;
+}
+
+/* Light separators in all header rows. */
+.upper-frame .head > div.hcol.bII-col,
+.upper-frame .head > div.hcol.bIII-col,
+.upper-frame .head > div.hcol.iv-col,
+.upper-frame .head > div.hcol.pv-col,
+.upper-frame .head > div.hcol.bVII-col,
+.upper-frame .head > div.merged-modal.bII-modal,
+.upper-frame .head > div.merged-modal.bIII-modal,
+.upper-frame .head > div.merged-modal.iv-modal,
+.upper-frame .head > div.merged-modal.pv-modal,
+.upper-frame .head > div.merged-modal.bVII-modal,
+.upper-frame .head > div.modal-half.bII-modal,
+.upper-frame .head > div.modal-half.bIII-modal,
+.upper-frame .head > div.modal-half.iv-modal,
+.upper-frame .head > div.modal-half.pv-modal,
+.upper-frame .head > div.modal-half.bVII-modal {
+  border-right: 1px solid #F5F5F5 !important;
+}
+
+/* Keep the modal-name row's strong bottom separator, as in Single Chart. */
+.upper-frame .head > div.merged-modal,
+.upper-frame .head > div.modal-half {
+  border-bottom: 4px solid #B8B8B8 !important;
+}
+
+/* The two internal horizontal lines between Upper header rows stay invisible. */
+.upper-frame .head > div.hcol {
+  border-bottom: 0 !important;
+}
+
+/* Restore the modal row's vertical separators after the horizontal clear. */
+.upper-frame .head > div.merged-modal.i-modal,
+.upper-frame .head > div.merged-modal.vi-modal,
+.upper-frame .head > div.modal-half.i-modal,
+.upper-frame .head > div.modal-half.vi-modal {
+  border-left: 2px solid #D0D0D0 !important;
+  border-right: 2px solid #D0D0D0 !important;
+  border-bottom: 4px solid #B8B8B8 !important;
+}
+
+/* Third modal-name row: restore the left separators at bIII, IV and V. */
+</style>
+
+<style id="ii-iii-plusiv-right-borders">
+/* Match the Single Chart light right separators on calculated cells: II, III, +IV. */
+.upper-grid > .cell:nth-child(13n+4),
+.upper-grid > .cell:nth-child(13n+6),
+.upper-grid > .cell:nth-child(13n+8),
+.block-grid > .cell:nth-child(13n+4),
+.block-grid > .cell:nth-child(13n+6),
+.block-grid > .cell:nth-child(13n+8) {
+  border-right: 1px solid #F5F5F5 !important;
+}
+</style>
+<style id="explicit-ii-iii-plusiv-borders">
+/* Explicit, slightly darker 1px right separators for calculated columns II, III and +IV. */
+.upper-grid > .cell.col-2,
+.upper-grid > .cell.col-4,
+.upper-grid > .cell.col-6,
+.block-grid > .cell.col-2,
+.block-grid > .cell.col-4,
+.block-grid > .cell.col-6 {
+  border-right: 1px solid #D9D9D9 !important;
+}
+</style>
+
+<style id="upper-modal-right-border-fix">
+</style>
+
+<style id="upper-column-selection">
+/* Clicking an Upper header/calculated cell highlights non-empty cells in that same column. */
+.head .upper-col-highlight,
+.upper-grid .upper-col-highlight,
+.lower-scroll .block-grid > .cell.lower-pitch-highlight { background:#E2F0D9 !important; color:#000000 !important; }
+.block-grid .lower-pitch-highlight,
+.block-grid .lower-pitch-highlight * { color:#000000 !important; }
+</style>
+
+<style id="lower-label-color-fix">
+/* Lower family-name labels only: lighter grey text. */
+.block-grid > .label { color:#8A8A8A !important; }
+</style>
+
+<style id="lower-family-label-color-final">
+/* Final override: Lower family-name labels 1.Lyd through 11c. Min Pent Lead. */
+.lower-scroll .block-grid > .label { color:#A6A6A6 !important; }
+.lower-scroll .block-grid > .label.family-7b { color:#A6A6A6 !important; }
+.lower-scroll .block-grid > .cell { color:#A6A6A6 !important; }
+
+/* Upper 7b row: 1px bottom border across the entire row. */
+.upper-grid .family-7b,
+.upper-grid .family-7b-cell { border-bottom: 1px solid #B8B8B8 !important; }
+</style>
+</head><body>
+<div class="toolbar"><div class="title">CSEREBEREMULTI KEY CHART</div><div class="controls">
+
+<div class="target-box"><strong>TARGET</strong><div class="degrees" id="degrees"></div></div>
+<div class="group"><small>View</small><button class="modebtn active" id="viewNote">Note</button><button class="modebtn" id="viewGravity">Gravity</button></div>
+<div class="target-value" id="targetValue"></div>
+</div></div>
+<div class="main"><div class="canvas">
+<div class="upper-frame">
+  <div class="head" id="head"></div>
+  <div class="upper-grid" id="upperGrid"></div>
+</div>
+<div class="lower-scroll" id="lowerScroll"><div id="blocks"></div></div>
+</div></div>
+<div class="footer">ChromaTonaLydica - by Peter Somi</div>
+<script>
+const DATA={"key_order":["7#","6#","5#","4#","3#","2#","1#","--","1b","2b","3b","4b","5b","6b","7b"],"key_notes":{"7#":["F#","G","G#","A","A#","H","H#","C#","C##","D#","E","E#"],"6#":["H","C","C#","D","D#","E","E#","F#","F##","G#","A","A#"],"5#":["E","F","F#","G","G#","A","A#","H","H#","C#","D","D#"],"4#":["A","Hb","H","C","C#","D","D#","E","E#","F#","G","G#"],"3#":["D","Eb","E","F","F#","G","G#","A","A#","H","C","C#"],"2#":["G","Ab","A","Hb","H","C","C#","D","D#","E","F","F#"],"1#":["C","Db","D","Eb","E","F","F#","G","G#","A","Hb","H"],"--":["F","Gb","G","Ab","A","Hb","H","C","C#","D","Eb","E"],"1b":["B","Cb","C","Db","D","Eb","E","F","F#","G","Ab","A"],"2b":["Eb","Fb","F","Gb","G","Ab","A","B","B#","C","Db","D"],"3b":["Ab","Bb","B","Cb","C","Db","D","Eb","E","F","Gb","G"],"4b":["Db","Ebb","Eb","Fb","F","Gb","G","Ab","A","B","Cb","C"],"5b":["Gb","Abb","Ab","Bb","B","Cb","C","Db","D","Eb","Fb","F"],"6b":["Cb","Dbb","Db","Ebb","Eb","Fb","F","Gb","G","Ab","Bb","B"],"7b":["Fb","Gbb","Gb","Abb","Ab","Bb","B","Cb","C","Db","Ebb","Eb"]},"blocks":[{"key":"7#","header":"Key Signature   -   7#   -   F#","note_header":"F#     G#     A#     H#     C#     D#     E#"},{"key":"6#","header":"Key Signature   -   6#   -   H","note_header":"H     C#     D#     E#     F#     G#     A#"},{"key":"5#","header":"Key Signature   -   5#   -   E","note_header":"E     F#     G#     A#     H     C#     D#"},{"key":"4#","header":"Key Signature   -   4#   -   A","note_header":"A     H     C#     D#     E     F#     G#"},{"key":"3#","header":"Key Signature   -   3#   -   D","note_header":"D     E     F#     G#     A     H     C#"},{"key":"2#","header":"Key Signature   -   2#   -   G","note_header":"G     A     H     C#     D     E     F#"},{"key":"1#","header":"Key Signature   -   1#   -   C","note_header":"C     D     E     F#     G     A     H"},{"key":"--","header":"Key Signature   -   --   -   F","note_header":"F     G     A     H     C     D     E"},{"key":"1b","header":"Key Signature   -   1b   -   B","note_header":"B     C     D     E     F     G     A"},{"key":"2b","header":"Key Signature   -   2b   -   Eb","note_header":"Eb     F     G     A     B     C     D"},{"key":"3b","header":"Key Signature   -   3b   -   Ab","note_header":"Ab     B     C     D     Eb     F     G"},{"key":"4b","header":"Key Signature   -   4b   -   Db","note_header":"Db     Eb     F     G     Ab     B     C"},{"key":"5b","header":"Key Signature   -   5b   -   Gb","note_header":"Gb     Ab     B     C     Db     Eb     F"},{"key":"6b","header":"Key Signature   -   6b   -   Cb","note_header":"Cb     Db     Eb     F     Gb     Ab     B"},{"key":"7b","header":"Key Signature   -   7b   -   Fb","note_header":"Fb     Gb     Ab     B     Cb     Db     Eb"}],"patterns":[[1,0,1,0,1,0,1,1,0,1,0,1],[1,0,1,0,1,0,1,0,1,1,0,1],[1,0,1,1,0,0,1,1,0,1,0,1],[1,0,1,0,1,0,1,1,0,1,1,0],[1,0,1,0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1,1,1,0],[1,0,1,1,0,0,1,0,1,1,0,1],[1,0,1,1,0,1,1,0,1,1,0,1],[1,1,0,1,0,0,1,1,0,1,1,0],[1,1,0,1,1,0,1,1,0,1,1,0],[1,0,1,0,1,1,0,1,0,1,0,1],[1,0,1,0,1,1,0,1,0,1,1,0],[1,0,1,0,1,1,0,0,1,1,0,1],[1,0,1,0,1,1,0,1,1,1,0,1],[1,0,1,1,0,1,0,1,0,1,1,0],[1,0,0,1,1,1,1,1,0,1,1,0],[1,0,1,1,1,1,1,1,0,1,1,1]],"family_labels":["1.Lyd","2. Lyd Aug","3. Lyd Dim","4. Lyd Flat 7","5. Aux Aug","5b. Lyd Dom Aug","6. Aux Dim","6b. Aux Dim W/H","7. LydPhr6","7b. Aux Dim Bl H/W","8. Maj","9. Mix","10. Maj Aug","10b. Beb Maj","11. Dor","11b. Af-Am Blues","11c. Min Pent Lead"],"roman":["I","bII","II","bIII","III","IV","+IV","V","+V","VI","bVII","VII"],"degrees":["1","b2","2","b3","3","4","#4","5","#5","6","b7","7"],"modal":["L Y D I A N","M I X O L Y D I A N","","A E O L I A N","","L O C R I A N","","I O N I A N","","D O R I A N","P H R Y G I A N",""],"upper_target":[true,false,false,false,true,false,false,true,false,false,false,false]};
+const state={primary:'--',view:'note',checks:[...DATA.upper_target],upperHighlightCol:null};
+const GRAVITY=[1,12,3,9,5,11,7,2,8,4,10,6];
+// Pitch-position mapping copied from Multi Chart!CI2:DL3 in the source workbook.
+// Enharmonic spellings sharing one pitch position intentionally map to the same value.
+const PITCH_POSITION={"H#":1,"C":1,"Dbb":1,"C#":2,"Db":2,"C##":3,"D":3,"Ebb":3,"D#":4,"Eb":4,"E":5,"Fb":5,"E#":6,"F":6,"Gbb":6,"F#":7,"Gb":7,"G":8,"F##":8,"Abb":8,"G#":9,"Ab":9,"A":10,"Bb":10,"A#":11,"Hb":11,"B":11,"H":12,"Cb":12,"B#":12};
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function noteArray(key){return DATA.key_notes[key]||DATA.key_notes['3#'];}
+function pitchPosition(note){return PITCH_POSITION[String(note||'').trim()]||null;}
+function selectedUpperPitchPosition(){
+  if(state.upperHighlightCol===null)return null;
+  return pitchPosition(noteArray(state.primary)[state.upperHighlightCol]);
+}
+function targetCode(){return state.checks.map((v,i)=>v?String(i+1).padStart(2,'0'):'--').join('')}
+function patternMatches(pattern,p){for(let j=0;j<12;j++){if(state.checks[j]&&Number(pattern[(p-1+j)%12])!==1)return false;}return true;}
+function structureFor(family,p,key){
+ const pattern=DATA.patterns[family]; if(!patternMatches(pattern,p))return '';
+ const notes=noteArray(key), left=[], right=[], seen=new Set();
+ for(let j=0;j<12;j++){if(j===0||state.checks[j]){const pos=(p-1+j)%12;left.push(state.view==='note'?notes[pos]:GRAVITY[pos]);seen.add(pos);}}
+ for(let off=1;off<=11;off++){const pos=(p-1+off)%12;if(seen.has(pos))continue;if(Number(pattern[pos])!==1)continue;right.push(state.view==='note'?notes[pos]:GRAVITY[pos]);}
+ if(left.length===0)return '';return left.join(' ')+'  |  '+right.join(' ');
+}
+function alignClass(i){if([0,9].includes(i))return 'center';if([1,3,5,7,10].includes(i))return 'right';return 'left';}
+function modalCellText(i){const notes=DATA.modal;return notes[i]||''}
+function buildHeader(){
+ const head=document.getElementById('head');head.innerHTML='';
+ const blank1=document.createElement('div'); blank1.className='header-deleted-cell'; blank1.style.gridColumn='1'; blank1.style.gridRow='1'; head.appendChild(blank1);
+ const blank2=document.createElement('div'); blank2.className='header-deleted-cell'; blank2.style.gridColumn='1'; blank2.style.gridRow='2'; head.appendChild(blank2);
+ const key=document.createElement('div');key.className='keyhost';key.style.gridColumn='1';key.style.gridRow='1/4';key.innerHTML='<small>KEY</small><select id="headKey"></select>';head.appendChild(key);
+ const ks=key.querySelector('select');ks.innerHTML=DATA.key_order.map(k=>`<option value="${esc(k)}">${esc(k==='--'?'--':k)}</option>`).join('');ks.value=state.primary;ks.onchange=()=>selectPrimaryKey(ks.value);
+ DATA.roman.forEach((r,i)=>{
+   const right=[1,3,5,7,10].includes(i), center=[0,9].includes(i), left=[2,4,6,8,11].includes(i), muted=[1,3,5,8,10].includes(i);
+   const colCls=['i-col','bII-col','ii-col','bIII-col','iii-col','iv-col','aIV-col','v-col','pv-col','vi-col','bVII-col','vii-col'][i];
+   const a=document.createElement('div'); a.className='hcol upper-header-row1 '+(right?'align-right ':'')+(center?'align-center ':'')+(left?'align-left ':'')+(muted?'muted-header ':'')+colCls; a.dataset.col=String(i); a.style.gridColumn=String(i+2); a.style.gridRow='1'; if(center)a.classList.add('i-col'); a.innerHTML=`<div class="roman">${esc(r)}</div>`; head.appendChild(a);
+   const n=document.createElement('div'); n.className='hcol upper-header-row2 '+(right?'align-right ':'')+(center?'align-center ':'')+(left?'align-left ':'')+(muted?'muted-header ':'')+colCls; n.dataset.col=String(i); n.addEventListener('click',()=>setUpperColumnHighlight(i)); n.style.gridColumn=String(i+2); n.style.gridRow='2'; if(center)n.classList.add('i-col'); n.innerHTML=`<div class="note">${esc(state.view==='gravity'?String(GRAVITY[i]):noteArray(state.primary)[i])}</div>`; head.appendChild(n);
+ });
+ const modalCells=[
+   {text:'L Y D I A N', start:2, end:2, cls:'i-modal'},
+   {text:'MIXOLYDIAN', start:3, end:4, split:true},
+   {text:'AEOLIAN', start:5, end:6, split:true},
+   {text:'LOCRIAN', start:7, end:8, split:true},
+   {text:'IONIAN', start:9, end:10, split:true},
+   {text:'D O R I A N', start:11, end:11, cls:'vi-modal'},
+   {text:'PHRYGIAN', start:12, end:13, split:true}
+ ];
+ function splitModalName(text){ const raw=[...text]; let cut=Math.ceil(raw.length/2); if(text==='MIXOLYDIAN') cut=5; if(text==='PHRYGIAN') cut=4; const left=raw.slice(0,cut).map(ch=>ch+' ').join('').trim(); const right=raw.slice(cut).map(ch=>ch+' ').join('').trim(); return [left,right]; }
+ const modalBorderByCol=[['head-b-left-dark','head-b-right-dark'],['head-b-right-light'],['head-b-left-light','head-b-right-light'],['head-b-left-light','head-b-right-light'],['head-b-left-light','head-b-right-light','head-b-right-mid'],['head-b-left-light','head-b-right-light'],['head-b-left-light','head-b-right-mid'],['head-b-left-light','head-b-right-light'],['head-b-left-light'],['head-b-left-dark','head-b-right-dark'],['head-b-right-light'],['head-b-left-light','head-b-right-light']];
+ function mc(gridCol){const idx=gridCol-2;return idx>=0&&idx<12?modalBorderByCol[idx]:[];}
+ modalCells.forEach(m=>{
+   if(!m.split){const md=document.createElement('div');md.className='merged-modal '+(m.cls||'');md.style.gridRow='3';md.classList.add(...mc(m.start));md.textContent=m.text;md.style.gridColumn=String(m.start);head.appendChild(md);return;}
+   const [a,b]=splitModalName(m.text);
+   const left=document.createElement('div');left.className='modal-half modal-half-first';left.classList.add(...mc(m.start));left.style.gridRow='3';left.style.gridColumn=String(m.start);left.textContent=a;
+   const right=document.createElement('div');right.className='modal-half modal-half-second'; if([4,6,8].includes(m.end)){ right.classList.add('ii-iii-aIV-modal-divider'); right.style.setProperty('border-right','1px solid #D9D9D9','important'); } right.classList.add(...mc(m.end));right.style.gridRow='3';right.style.gridColumn=String(m.end);right.textContent=b;
+   head.appendChild(left);head.appendChild(right);
+ });
+}
+function buildUpper(){
+ const grid=document.getElementById('upperGrid');grid.innerHTML='';
+ DATA.family_labels.forEach((label,f)=>{
+   const lab=document.createElement('div');lab.className='label';lab.textContent=label;grid.appendChild(lab);
+   for(let i=0;i<12;i++){const c=document.createElement('div');c.className='cell '+alignClass(i)+' col-'+i; c.dataset.col=String(i);if(i===0)c.classList.add('i');if(i===9)c.classList.add('vi');if(f===9)c.classList.add('family-7b-cell','upper-7b');lab.classList.toggle('family-7b', f===9);c.textContent=structureFor(f,i+1,state.primary);c.addEventListener('click',()=>setUpperColumnHighlight(i));grid.appendChild(c);}
+ });
+}
+function applyUpperColumnHighlight(){
+  const col=state.upperHighlightCol;
+  const pitch=selectedUpperPitchPosition();
+  document.querySelectorAll('.head .upper-header-row2').forEach(el=>el.classList.toggle('upper-col-highlight', col!==null && el.dataset.col===String(col)));
+  document.querySelectorAll('.head .upper-header-row1').forEach(el=>el.classList.remove('upper-col-highlight'));
+  document.querySelectorAll('.upper-grid .cell').forEach(el=>el.classList.toggle('upper-col-highlight', col!==null && el.dataset.col===String(col) && el.textContent.trim()!==''));
+  document.querySelectorAll('.block-grid .cell').forEach(el=>el.classList.toggle('lower-pitch-highlight', pitch!==null && el.dataset.pitchPosition===String(pitch) && el.textContent.trim()!==''));
+}
+function setUpperColumnHighlight(col){
+  state.upperHighlightCol=col;
+  applyUpperColumnHighlight();
+}
+
+function buildControls(){
+ const d=document.getElementById('degrees');d.innerHTML='<span style="font-weight:800;font-size:10px">1</span>';
+ for(let i=1;i<12;i++){const lab=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=state.checks[i];cb.onchange=()=>{state.checks[i]=cb.checked;render()};lab.append(cb,document.createTextNode(DATA.degrees[i]));d.appendChild(lab)}
+ document.getElementById('viewNote').onclick=()=>{state.view='note';updateViewButtons();render()};
+ document.getElementById('viewGravity').onclick=()=>{state.view='gravity';updateViewButtons();render()};
+ syncControls();
+}
+function renderBlock(key){
+ const block=DATA.blocks.find(b=>b.key===key);const wrap=document.createElement('section');wrap.className='key-block'+(key===state.primary?' highlight-block':'');wrap.id='block-'+key.replace(/[^a-z0-9]/gi,'x');
+ wrap.innerHTML=`<div class="section-title">${esc(block.header)}</div><div class="section-notes">${esc(block.note_header)}</div>`;
+ const grid=document.createElement('div');grid.className='block-grid';
+ DATA.family_labels.forEach((label,f)=>{
+   const lab=document.createElement('div');lab.className='label';lab.textContent=label;grid.appendChild(lab);
+   for(let i=0;i<12;i++){const c=document.createElement('div');c.className='cell '+alignClass(i)+' col-'+i; c.dataset.col=String(i); c.dataset.pitchPosition=String(pitchPosition(noteArray(key)[i])||''); if(i===0)c.classList.add('i');if(i===9)c.classList.add('vi');if(f===9)c.classList.add('family-7b-cell');c.textContent=structureFor(f,i+1,key);grid.appendChild(c);}
+ });
+ wrap.appendChild(grid);return wrap;
+}
+function renderBlocks(){const out=document.getElementById('blocks');out.innerHTML='';for(const b of DATA.blocks)out.appendChild(renderBlock(b.key));}
+function updateViewButtons(){document.getElementById('viewNote').classList.toggle('active',state.view==='note');document.getElementById('viewGravity').classList.toggle('active',state.view==='gravity')}
+function syncControls(){document.getElementById('targetValue').textContent=targetCode();const hs=document.getElementById('headKey');if(hs)hs.value=state.primary;updateViewButtons()}
+function scrollLowerToKey(key,behavior='smooth'){
+ const lower=document.getElementById('lowerScroll');
+ const block=document.getElementById('block-'+key.replace(/[^a-z0-9]/gi,'x'));
+ if(lower && block){
+   const lowerRect=lower.getBoundingClientRect();
+   const blockRect=block.getBoundingClientRect();
+   const targetTop=lower.scrollTop + (blockRect.top - lowerRect.top) - 3;
+   lower.scrollTo({top:Math.max(0,targetTop),behavior});
+ }
+}
+function selectPrimaryKey(key){
+ state.primary=key;
+ render();
+ requestAnimationFrame(()=>scrollLowerToKey(key,'smooth'));
+}
+function render(){syncControls();buildHeader();buildUpper();renderBlocks();applyUpperColumnHighlight()}
+buildControls();render();
+requestAnimationFrame(()=>scrollLowerToKey(state.primary,'auto'));
+</script></body></html>
